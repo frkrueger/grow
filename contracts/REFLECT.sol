@@ -1,5 +1,7 @@
 /*
  * Copyright © 2020 reflect.finance. ALL RIGHTS RESERVED.
+ *
+ * Annotated by Fred Krueger 2021.
  */
 
 pragma solidity ^0.6.2;
@@ -21,11 +23,14 @@ contract REFLECT is Context, IERC20, Ownable {
     mapping (address => bool) private _isExcluded;
     address[] private _excluded;
    
+    // initialize total supply to 10 quadrillion
+    // initialize reflective total to a big number (maxint - maxint mod 10 quadrillion)
     uint256 private constant MAX = ~uint256(0);
     uint256 private constant _tTotal = 10 * 10**6 * 10**9;
     uint256 private _rTotal = (MAX - (MAX % _tTotal));
     uint256 private _tFeeTotal;
 
+    // allow 9 decimals of precsions
     string private _name = 'reflect.finance';
     string private _symbol = 'RFI';
     uint8 private _decimals = 9;
@@ -51,11 +56,13 @@ contract REFLECT is Context, IERC20, Ownable {
         return _tTotal;
     }
 
+    // override token balance by getting it from reflection
     function balanceOf(address account) public view override returns (uint256) {
         if (_isExcluded[account]) return _tOwned[account];
         return tokenFromReflection(_rOwned[account]);
     }
-
+    
+    // override token transfer by taking out 1% fee and distributing it
     function transfer(address recipient, uint256 amount) public override returns (bool) {
         _transfer(_msgSender(), recipient, amount);
         return true;
@@ -150,6 +157,7 @@ contract REFLECT is Context, IERC20, Ownable {
         emit Approval(owner, spender, amount);
     }
 
+    // transfer depending on whether the sender or recipient is excluded
     function _transfer(address sender, address recipient, uint256 amount) private {
         require(sender != address(0), "ERC20: transfer from the zero address");
         require(recipient != address(0), "ERC20: transfer to the zero address");
@@ -167,6 +175,7 @@ contract REFLECT is Context, IERC20, Ownable {
         }
     }
 
+     // the main transfer loop
     function _transferStandard(address sender, address recipient, uint256 tAmount) private {
         (uint256 rAmount, uint256 rTransferAmount, uint256 rFee, uint256 tTransferAmount, uint256 tFee) = _getValues(tAmount);
         _rOwned[sender] = _rOwned[sender].sub(rAmount);
@@ -174,7 +183,8 @@ contract REFLECT is Context, IERC20, Ownable {
         _reflectFee(rFee, tFee);
         emit Transfer(sender, recipient, tTransferAmount);
     }
-
+     
+    //recipient is excluded
     function _transferToExcluded(address sender, address recipient, uint256 tAmount) private {
         (uint256 rAmount, uint256 rTransferAmount, uint256 rFee, uint256 tTransferAmount, uint256 tFee) = _getValues(tAmount);
         _rOwned[sender] = _rOwned[sender].sub(rAmount);
@@ -184,6 +194,7 @@ contract REFLECT is Context, IERC20, Ownable {
         emit Transfer(sender, recipient, tTransferAmount);
     }
 
+    // sender excluded
     function _transferFromExcluded(address sender, address recipient, uint256 tAmount) private {
         (uint256 rAmount, uint256 rTransferAmount, uint256 rFee, uint256 tTransferAmount, uint256 tFee) = _getValues(tAmount);
         _tOwned[sender] = _tOwned[sender].sub(tAmount);
@@ -193,6 +204,7 @@ contract REFLECT is Context, IERC20, Ownable {
         emit Transfer(sender, recipient, tTransferAmount);
     }
 
+    // both sender and recipient are excluded from fees
     function _transferBothExcluded(address sender, address recipient, uint256 tAmount) private {
         (uint256 rAmount, uint256 rTransferAmount, uint256 rFee, uint256 tTransferAmount, uint256 tFee) = _getValues(tAmount);
         _tOwned[sender] = _tOwned[sender].sub(tAmount);
@@ -208,6 +220,8 @@ contract REFLECT is Context, IERC20, Ownable {
         _tFeeTotal = _tFeeTotal.add(tFee);
     }
 
+    // take in a transaction amount
+    // returns transaction Fee, amount transacted, 
     function _getValues(uint256 tAmount) private view returns (uint256, uint256, uint256, uint256, uint256) {
         (uint256 tTransferAmount, uint256 tFee) = _getTValues(tAmount);
         uint256 currentRate =  _getRate();
@@ -215,12 +229,15 @@ contract REFLECT is Context, IERC20, Ownable {
         return (rAmount, rTransferAmount, rFee, tTransferAmount, tFee);
     }
 
+    // transfer fee (tFee) = 1% of transfer Amount (tAmount)
+    // amount transfered (tTransferAmount) = tAmount - tFee
     function _getTValues(uint256 tAmount) private pure returns (uint256, uint256) {
         uint256 tFee = tAmount.div(100);
         uint256 tTransferAmount = tAmount.sub(tFee);
         return (tTransferAmount, tFee);
     }
 
+    // get reflective values by multiplying amount by currentRate
     function _getRValues(uint256 tAmount, uint256 tFee, uint256 currentRate) private pure returns (uint256, uint256, uint256) {
         uint256 rAmount = tAmount.mul(currentRate);
         uint256 rFee = tFee.mul(currentRate);
