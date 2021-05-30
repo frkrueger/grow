@@ -10,7 +10,7 @@ import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity/contracts/utils/Address.sol";
 import "openzeppelin-solidity/contracts/access/Ownable.sol";
 
-contract REFLECT is Context, IERC20, Ownable {
+contract ALPHA is Context, IERC20, Ownable {
     using SafeMath for uint256;
     using Address for address;
 
@@ -21,14 +21,15 @@ contract REFLECT is Context, IERC20, Ownable {
     mapping (address => bool) private _isExcluded;
     address[] private _excluded;
    
+    // set the total supply to 21 million, with 2 digits of precision
     uint256 private constant MAX = ~uint256(0);
-    uint256 private constant _tTotal = 10 * 10**6 * 10**9;
+    uint256 private constant _tTotal = 21* 10**6* 10**2;
     uint256 private _rTotal = (MAX - (MAX % _tTotal));
     uint256 private _tFeeTotal;
 
-    string private _name = 'reflect.finance';
-    string private _symbol = 'RFI';
-    uint8 private _decimals = 9;
+    string private _name = 'alpha.finance';
+    string private _symbol = 'ALPHA';
+    uint8 private _decimals = 2;
 
     constructor () public {
         _rOwned[_msgSender()] = _rTotal;
